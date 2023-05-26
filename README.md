@@ -1,7 +1,7 @@
 # Project Rest Api with Golang 
 *without frameworks* 
  
-* This project create with package http of golang and another's librarys for example gorilla mux for use router and jwt for claims token use in the login handlers.
+* This project it was created with package http of golang and another's librarys for example gorilla mux for use router and jwt for claims token use in the login handlers.
 
 * Important you must install go and configurate for use go modules.
 
