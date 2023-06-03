@@ -8,6 +8,7 @@ import (
 
 	"curso-rest.com/go/rest/database"
 	"curso-rest.com/go/rest/repository"
+	"curso-rest.com/go/rest/websocket"
 	"github.com/gorilla/mux"
 )
 
@@ -22,15 +23,21 @@ type Config struct {
 
 type Server interface {
 	Config() *Config
+	Hub() *websocket.Hub
 }
 
 type Broker struct {
 	config *Config
-	router mux.Router
+	router *mux.Router
+	hub    *websocket.Hub
 }
 
 func (b *Broker) Config() *Config {
 	return b.config
+}
+
+func (b *Broker) Hub() *websocket.Hub {
+	return b.hub
 }
 
 func NewServer(ctx context.Context, config *Config) (*Broker, error) {
@@ -46,24 +53,26 @@ func NewServer(ctx context.Context, config *Config) (*Broker, error) {
 
 	broker := &Broker{
 		config: config,
-		router: *mux.NewRouter(),
+		router: mux.NewRouter(),
+		hub:    websocket.NewHub(),
 	}
 	return broker, nil
 
 }
 
 func (b *Broker) Start(binder func(s Server, r *mux.Router)) {
-	b.router = *mux.NewRouter()
+	b.router = mux.NewRouter()
 	//Como estoy implementando la interface de Server lo puedo enviar al broker como un server
-	binder(b, &b.router)
+	binder(b, b.router)
 	repo, err := database.NewMysqlRepository(b.config.DatabaseURL)
 	if err != nil {
 		log.Fatal(err)
 	}
+	go b.hub.Run()
 	repository.SetRepository(repo)
 	log.Println("Starting Server on port", b.Config().Port)
 
-	if err := http.ListenAndServe(b.config.Port, &b.router); err != nil {
+	if err := http.ListenAndServe(b.config.Port, b.router); err != nil {
 		log.Fatal("ListenAndServer: ", err)
 	} else {
 		log.Fatal("server stopped")
