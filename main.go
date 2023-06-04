@@ -38,16 +38,21 @@ func main() {
 }
 
 func BindRoutes(s server.Server, r *mux.Router) {
-	r.Use(middleware.CheckAuthMiddleware(s))
+
+	//Generate sub route where use api/v1 for access some routes in the realm api router
+	// And not require token for get public information
+	api := r.PathPrefix("/api/v1").Subrouter()
+
+	api.Use(middleware.CheckAuthMiddleware(s))
 
 	r.HandleFunc("/", handlers.HomeHandler(s)).Methods(http.MethodGet)
 	r.HandleFunc("/signup", handlers.SingUpHandler(s)).Methods(http.MethodPost)
 	r.HandleFunc("/login", handlers.LoginHandler(s)).Methods(http.MethodPost)
-	r.HandleFunc("/me", handlers.MeHandler(s)).Methods(http.MethodGet)
-	r.HandleFunc("/posts", handlers.InsertPostHandler(s)).Methods(http.MethodPost)
+	api.HandleFunc("/me", handlers.MeHandler(s)).Methods(http.MethodGet)
+	api.HandleFunc("/posts", handlers.InsertPostHandler(s)).Methods(http.MethodPost)
 	r.HandleFunc("/posts/{id}", handlers.GetPostByIdHandler(s)).Methods(http.MethodGet)
-	r.HandleFunc("/posts/{id}", handlers.UpdatePostHandler(s)).Methods(http.MethodPut)
-	r.HandleFunc("/posts/{id}", handlers.DeletePostByIdHandler(s)).Methods(http.MethodDelete)
+	api.HandleFunc("/posts/{id}", handlers.UpdatePostHandler(s)).Methods(http.MethodPut)
+	api.HandleFunc("/posts/{id}", handlers.DeletePostByIdHandler(s)).Methods(http.MethodDelete)
 	r.HandleFunc("/posts", handlers.ListPostHandler(s)).Methods(http.MethodGet)
 	r.HandleFunc("/ws", s.Hub().HandleWebSocket)
 }
